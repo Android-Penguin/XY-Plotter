@@ -17,19 +17,28 @@ void moveTo(float xCoordMM, float yCoordMM) {
 	//Converts millimeters on the whiteboard to degrees of motor rotation
 	float xDegrees = xCoordMM * xDegreesPerMM;
 	float yDegrees = yCoordMM * yDegreesPerMM;
+	//Speed of the motor travelling on the shorter axis
+	float reducedMotorSpeed;
+	//Adjustment to the previus speed to compensate for inaccurate motor speed control
+	float adjustedReducedMotorSpeed;
 
 	/*Sets motor targets and speeds as follows
 	 - Determines which axis has the furthest travel
 	 - Sets the target position for both axes
 	 - Sets longer axis travel speed to the target motor speed
-	 - Sets the shorter axis travel speed proportional to that of the first so that both axes arrive at the target coordinate at the same time*/
+	 - Sets the shorter axis travel speed proportional to that of the first so that both axes arrive at the target coordinate at the same time
+	 - Adjusts the previous speed to compensate for inaccurate motor speed control*/
 	if(abs(xDegrees - getMotorEncoder(carriageAxis)) > abs(yDegrees - getMotorEncoder(rackAxis))) {
 		//X axis has greater travel
 		setMotorTarget(carriageAxis, xDegrees, targetMotorSpeed);
-		setMotorTarget(rackAxis, yDegrees, targetMotorSpeed * abs((yDegrees - getMotorEncoder(rackAxis)) / (xDegrees - getMotorEncoder(carriageAxis))));
+		reducedMotorSpeed = targetMotorSpeed * abs((yDegrees - getMotorEncoder(rackAxis)) / (xDegrees - getMotorEncoder(carriageAxis)));
+		adjustedReducedMotorSpeed = (1 + (((targetMotorSpeed - reducedMotorSpeed) / targetMotorSpeed) * 0.4)) * reducedMotorSpeed;
+		setMotorTarget(rackAxis, yDegrees, adjustedReducedMotorSpeed);
 	} else {
 		//Y axis has greater travel
-		setMotorTarget(carriageAxis, xDegrees, targetMotorSpeed * abs((xDegrees - getMotorEncoder(carriageAxis)) / (yDegrees - getMotorEncoder(rackAxis))));
+		reducedMotorSpeed = targetMotorSpeed * abs((xDegrees - getMotorEncoder(carriageAxis)) / (yDegrees - getMotorEncoder(rackAxis)));
+		adjustedReducedMotorSpeed = (1 + (((targetMotorSpeed - reducedMotorSpeed) / targetMotorSpeed) * 0.53)) * reducedMotorSpeed;
+		setMotorTarget(carriageAxis, xDegrees, adjustedReducedMotorSpeed);
 		setMotorTarget(rackAxis, yDegrees, targetMotorSpeed);
 	}
 	waitUntilMotorMoveComplete(carriageAxis);
