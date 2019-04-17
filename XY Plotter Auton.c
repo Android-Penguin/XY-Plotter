@@ -14,9 +14,10 @@ const float yDegreesPerMM = 9;//Multiplyer to convert millimeters to degrees for
 Moves the pen to an XY Coorinate on the whiteboard
 */
 void moveTo(float xCoordMM, float yCoordMM) {
+	float scaleMultiplier = 10;//************************************************************Temporary size multiplier
 	//Converts millimeters on the whiteboard to degrees of motor rotation
-	float xDegrees = xCoordMM * xDegreesPerMM;
-	float yDegrees = yCoordMM * yDegreesPerMM;
+	float xDegrees = ((xCoordMM - 9) * scaleMultiplier) * xDegreesPerMM;//*******************Temporarily subtracting 9
+	float yDegrees = ((yCoordMM - 11) * scaleMultiplier) * yDegreesPerMM;//******************Temporarily subtracting 11
 	//Speed of the motor travelling on the shorter axis
 	float reducedMotorSpeed;
 	//Adjustment to the previus speed to compensate for inaccurate motor speed control
@@ -87,14 +88,102 @@ void goHome() {
 	sleep(1000);
 }
 
+/************************************************************************************
+Moves the robot to the top right corner of the whiteboard.
+This is done after finishing a drawing so that the text/lines are more easily visible
+*/
+void moveTopRight () {
+	bool topBumperPressed = false;
+	bool rightBumperPressed = false;
+
+	setMotorSpeed(rackAxis, 100);
+	setMotorSpeed(carriageAxis, 100);
+	//Move to the top right of drawing area until the right and top bumper switches are pressed
+	while(topBumperPressed == false || rightBumperPressed == false) {
+		if(getBumperValue(topBumper) == 1) {
+			setMotorSpeed(rackAxis, 0);
+			topBumperPressed = true;
+		}
+		if(getBumperValue(rightBumper) == 1) {
+			setMotorSpeed(carriageAxis, 0);
+			rightBumperPressed = true;
+		}
+	}
+	topBumperPressed = false;
+	rightBumperPressed = false;
+	sleep(1000);
+}
+
 task main() {
 	//Test code to draw lines for debugging
 	penUp();
 	goHome();
+	//S
+	moveTo(15.5, 20);
 	penDown();
-	moveTo(20, 154);
-	moveTo(20, 100);
-	moveTo(200, 80);
+	moveTo(14, 21);
+	moveTo(12, 21);
+	moveTo(10.5, 20);
+	moveTo(11, 17.5);
+	moveTo(13, 16.5);
+	moveTo(14, 15);
+	moveTo(14, 13);
+	moveTo(13, 11.5);
+	moveTo(11, 11);
+	moveTo(9, 12);
 	penUp();
-	moveTo(432, 154);
+	//h
+	moveTo(17, 11);
+	penDown();
+	moveTo(17, 21);
+	penUp();
+	moveTo(17, 15);
+	penDown();
+	moveTo(18, 16);
+	moveTo(20, 16);
+	moveTo(21.5, 15);
+	moveTo(21.5, 11);
+	penUp();
+	//a
+	moveTo(26.5, 16.5);
+	penDown();
+	moveTo(26.5, 11);
+	penUp();
+	moveTo(26.5, 12);
+	penDown();
+	moveTo(26, 11);
+	moveTo(24, 11);
+	moveTo(22.5, 12);
+	moveTo(22.5, 15);
+	moveTo(24, 16);
+	moveTo(26, 16);
+	moveTo(26.5, 15);
+	penUp();
+	//u
+	moveTo(28, 16.5);
+	penDown();
+	moveTo(28, 12);
+	moveTo(28.5, 11);
+	moveTo(31, 11);
+	moveTo(32, 12);
+	penUp();
+	moveTo(32, 16.5);
+	penDown();
+	moveTo(32, 11);
+	penUp();
+	//n
+	moveTo(33.5, 16.5);
+	penDown();
+	moveTo(33.5, 11);
+	penUp();
+	moveTo(33.5, 15.5);
+	penDown();
+	moveTo(35, 16.5);
+	moveTo(37.5, 16.5);
+	moveTo(38, 15.5);
+	moveTo(38, 11);
+
+
+	penUp();
+	moveTopRight();
 }
