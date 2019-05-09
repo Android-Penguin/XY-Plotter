@@ -1,45 +1,155 @@
 #pragma config(Sensor, port1,  bottomBumper,   sensorVexIQ_Touch)//Bumper switch at the bottom end of the rack
 #pragma config(Sensor, port5,  leftBumper,     sensorVexIQ_Touch)//Bumper switch on the left side of the carriage
 #pragma config(Sensor, port6,  topBumper,      sensorVexIQ_Touch)//Bumper switch at the top end of the rack
-#pragma config(Sensor, port7,  rightBumper,    sensorVexIQ_Touch)//Bumper swith on the right side of the carriage
+#pragma config(Sensor, port7,  rightBumper,    sensorVexIQ_Touch)//Bumper switch on the right side of the carriage
+#pragma config(Sensor, port8,  debugLED,       sensorVexIQ_LED)//Temporary debug LED for testing
 #pragma config(Motor,  motor2,          carriageAxis,  tmotorVexIQ, PIDControl, encoder)//Motor that drives the sprocket on the chain axis
 #pragma config(Motor,  motor3,          rackAxis,      tmotorVexIQ, PIDControl, reversed, encoder)//Motor that drives the pinion on the rack axis
 #pragma config(Motor,  motor4,          liftArm,       tmotorVexIQ, PIDControl, encoder)//Motor that lifts and lowers the pen
 
-const int targetMotorSpeed = 20;//Highest speed a motor will move at when drawing a line
+#include "XLetterCoords.c"
+#include "YLetterCoords.c"
+#define PENUP true
+#define PENDOWN false
+bool penState = PENUP;
+const int targetMotorSpeed = 25;//Highest speed a motor will move at when drawing a line
 const float xDegreesPerMM = 9;//Multiplyer to convert millimeters to degrees for the carriage axis
 const float yDegreesPerMM = 9;//Multiplyer to convert millimeters to degrees for the rack axis
+char textToPrint [21] = "                    ";
+char cursorLine [21] = "                    ";
+
+/************************************************
+User text entry to select text to be written
+*/
+void selectText() {
+	bool inputComplete = false;
+	int cursorPos = 0;
+	int currentCharacter = 65;
+	int removeBlank;
+	textToPrint[cursorPos] = currentCharacter;
+	cursorLine[cursorPos] = '*';
+
+	while(inputComplete == false) {
+		displayTextLine(0, textToPrint);
+		displayTextLine(1, cursorLine);
+
+		//Button pressed when user finishes editing
+		if(getJoystickValue(BtnFUp) == 1) {
+			//Scans through the array of text to print and removes all blank spaces after the last character
+			for (removeBlank = 19; removeBlank > 0; removeBlank--) {
+				if(textToPrint[removeBlank] == ' ') {
+					textToPrint[removeBlank] = 0;
+				}
+				else {
+					break;
+				}
+			}
+			inputComplete = true;
+		}
+		/*********************************************************
+		Moves the cursor left and right along the screen
+		*/
+		if(getJoystickValue(ChC) > 40 && cursorPos < 10) {
+			//Replaces the cursor with a blank space
+			cursorLine[cursorPos] = ' ';
+			//Moves the cursor along one space
+			cursorPos ++;
+			//Replaces the blank space with a cursor
+			cursorLine[cursorPos] = '*';
+			resetTimer(T1);
+		}
+		while(getJoystickValue(ChC) > 40) {
+			//Timer is used as a debounce timer to ensure cursor only moves one position along the screen
+			if(getTimerValue(T1) > 300) {
+				break;
+			}
+		}
+		if(getJoystickValue(ChC) < -40 && cursorPos > 0) {
+			//Replaces the cursor with a blank space
+			cursorLine[cursorPos] = ' ';
+			//Moves the cursor along one space
+			cursorPos --;
+			//Replaces the blank space with a cursor
+			cursorLine[cursorPos] = '*';
+			resetTimer(T1);
+		}
+		while(getJoystickValue(ChC) < -40) {
+			//Timer is used as a debounce timer to ensure cursor only moves one position along the screen
+			if(getTimerValue(T1) > 300) {
+				break;
+			}
+		}
+		/*********************************************************
+		Changes the character at the current cursor position
+		*/
+		if(getJoystickValue(BtnRUp) == 1 && currentCharacter < 67) {
+			//Changes the letter forward one character
+			currentCharacter ++;
+			//Changes the array to the new character
+			textToPrint[cursorPos] = currentCharacter;
+			resetTimer(T2);
+		}
+		while(getJoystickValue(BtnRUp) == 1) {
+			//Timer is used as a debounce timer to ensure the letter is only changes by one
+			if(getTimerValue(T2) > 300) {
+				break;
+			}
+		}
+		if(getJoystickValue(BtnLUp) == 1 && currentCharacter > 65) {
+			//Changes the letter back one character
+			currentCharacter --;
+			//Changes the array to the new character
+			textToPrint[cursorPos] = currentCharacter;
+			resetTimer(T2);
+		}
+		while(getJoystickValue(BtnLUp) == 1) {
+			//Timer is used as a debounce timer to ensure the letter is only changes by one
+			if(getTimerValue(T2) > 300) {
+				break;
+			}
+		}
+	}
+}
 
 /************************************************
 Moves the pen to an XY Coorinate on the whiteboard
 */
 void moveTo(float xCoordMM, float yCoordMM) {
-	float scaleMultiplier = 10;//************************************************************Temporary size multiplier
 	//Converts millimeters on the whiteboard to degrees of motor rotation
-	float xDegrees = ((xCoordMM - 9) * scaleMultiplier) * xDegreesPerMM;//*******************Temporarily subtracting 9
-	float yDegrees = ((yCoordMM - 11) * scaleMultiplier) * yDegreesPerMM;//******************Temporarily subtracting 11
+	float xDegrees = xCoordMM * xDegreesPerMM;
+	float yDegrees = yCoordMM * yDegreesPerMM;
 	//Speed of the motor travelling on the shorter axis
 	float reducedMotorSpeed;
 	//Adjustment to the previus speed to compensate for inaccurate motor speed control
 	float adjustedReducedMotorSpeed;
 
 	/*Sets motor targets and speeds as follows
-	 - Determines which axis has the furthest travel
-	 - Sets the target position for both axes
-	 - Sets longer axis travel speed to the target motor speed
-	 - Sets the shorter axis travel speed proportional to that of the first so that both axes arrive at the target coordinate at the same time
-	 - Adjusts the previous speed to compensate for inaccurate motor speed control*/
+	- Determines which axis has the furthest travel
+	- Sets the target position for both axes
+	- Sets longer axis travel speed to the target motor speed
+	- Sets the shorter axis travel speed proportional to that of the first so that both axes arrive at the target coordinate at the same time
+	- Adjusts the previous speed to compensate for inaccurate motor speed control*/
 	if(abs(xDegrees - getMotorEncoder(carriageAxis)) > abs(yDegrees - getMotorEncoder(rackAxis))) {
 		//X axis has greater travel
 		setMotorTarget(carriageAxis, xDegrees, targetMotorSpeed);
-		reducedMotorSpeed = targetMotorSpeed * abs((yDegrees - getMotorEncoder(rackAxis)) / (xDegrees - getMotorEncoder(carriageAxis)));
+		if(getMotorEncoder(carriageAxis) != xDegrees) {
+			reducedMotorSpeed = targetMotorSpeed * abs((yDegrees - getMotorEncoder(rackAxis)) / (xDegrees - getMotorEncoder(carriageAxis)));
+		}
+		else {
+			reducedMotorSpeed = targetMotorSpeed;
+		}
 		adjustedReducedMotorSpeed = (1 + (((targetMotorSpeed - reducedMotorSpeed) / targetMotorSpeed) * 0.4)) * reducedMotorSpeed;
-		setMotorTarget(rackAxis, yDegrees, adjustedReducedMotorSpeed);
-	} else {
+		setMotorTarget(rackAxis, yDegrees, reducedMotorSpeed);
+		} else {
 		//Y axis has greater travel
-		reducedMotorSpeed = targetMotorSpeed * abs((xDegrees - getMotorEncoder(carriageAxis)) / (yDegrees - getMotorEncoder(rackAxis)));
+		if(getMotorEncoder(rackAxis) != yDegrees) {
+			reducedMotorSpeed = targetMotorSpeed * abs((xDegrees - getMotorEncoder(carriageAxis)) / (yDegrees - getMotorEncoder(rackAxis)));
+		}
+		else {
+			reducedMotorSpeed = targetMotorSpeed;
+		}
 		adjustedReducedMotorSpeed = (1 + (((targetMotorSpeed - reducedMotorSpeed) / targetMotorSpeed) * 0.53)) * reducedMotorSpeed;
-		setMotorTarget(carriageAxis, xDegrees, adjustedReducedMotorSpeed);
+		setMotorTarget(carriageAxis, xDegrees, reducedMotorSpeed);
 		setMotorTarget(rackAxis, yDegrees, targetMotorSpeed);
 	}
 	waitUntilMotorMoveComplete(carriageAxis);
@@ -50,6 +160,7 @@ Raises pen
 */
 void penUp() {
 	setServoTarget(liftArm, 0);
+	penState = PENUP;
 	sleep(600);
 }
 
@@ -58,6 +169,7 @@ Lowers pen
 */
 void penDown() {
 	setMotorTarget(liftArm, 40, 10);
+	penState = PENDOWN;
 	waitUntilMotorMoveComplete(liftArm);
 }
 /***************************************************************************************************
@@ -115,75 +227,78 @@ void moveTopRight () {
 }
 
 task main() {
-	//Test code to draw lines for debugging
+	float  letterBaseX = getMotorEncoder(carriageAxis);
+	float  letterBaseY = getMotorEncoder(rackAxis);
+	float lineTargetX;
+	float lineTargetY;
+	float maxX = 0;
+	float fontSize = 30;
+	int charLookup;
+	int characterIndex;
+	int lineIndex;
+
 	penUp();
 	goHome();
-	//S
-	moveTo(15.5, 20);
-	penDown();
-	moveTo(14, 21);
-	moveTo(12, 21);
-	moveTo(10.5, 20);
-	moveTo(11, 17.5);
-	moveTo(13, 16.5);
-	moveTo(14, 15);
-	moveTo(14, 13);
-	moveTo(13, 11.5);
-	moveTo(11, 11);
-	moveTo(9, 12);
-	penUp();
-	//h
-	moveTo(17, 11);
-	penDown();
-	moveTo(17, 21);
-	penUp();
-	moveTo(17, 15);
-	penDown();
-	moveTo(18, 16);
-	moveTo(20, 16);
-	moveTo(21.5, 15);
-	moveTo(21.5, 11);
-	penUp();
-	//a
-	moveTo(26.5, 16.5);
-	penDown();
-	moveTo(26.5, 11);
-	penUp();
-	moveTo(26.5, 12);
-	penDown();
-	moveTo(26, 11);
-	moveTo(24, 11);
-	moveTo(22.5, 12);
-	moveTo(22.5, 15);
-	moveTo(24, 16);
-	moveTo(26, 16);
-	moveTo(26.5, 15);
-	penUp();
-	//u
-	moveTo(28, 16.5);
-	penDown();
-	moveTo(28, 12);
-	moveTo(28.5, 11);
-	moveTo(31, 11);
-	moveTo(32, 12);
-	penUp();
-	moveTo(32, 16.5);
-	penDown();
-	moveTo(32, 11);
-	penUp();
-	//n
-	moveTo(33.5, 16.5);
-	penDown();
-	moveTo(33.5, 11);
-	penUp();
-	moveTo(33.5, 15.5);
-	penDown();
-	moveTo(35, 16.5);
-	moveTo(37.5, 16.5);
-	moveTo(38, 15.5);
-	moveTo(38, 11);
+	resetMotorEncoder(carriageAxis);
+	resetMotorEncoder(rackAxis);
+	letterBaseX = getMotorEncoder(carriageAxis);
+	letterBaseY = getMotorEncoder(rackAxis);
+	selectText();
 
-
-	penUp();
+	//Scans through the "text to print" array character by character and prints it
+	for (characterIndex = 0; characterIndex<strlen(textToPrint); characterIndex++) {
+		//Letters have an ASCII value between 65 and 90
+		if(textToPrint[characterIndex] >= 65 && textToPrint[characterIndex] <= 90) {
+			/*Locates the letter in the x and y coordinate arrays. The minus 65 is used to offset the index because
+			"A" is listed as 0 and not 65 in the coordinate arrays*/
+			charLookup = textToPrint[characterIndex] - 65;
+		}
+		//Numbers have an ASCII value between 48 and 57
+		if(textToPrint[characterIndex] >= 48 && textToPrint[characterIndex] <= 57) {
+			/*Locates the letter in the x and y coordinate arrays. The minus 49 is used to offset the index because
+			"1" is listed as 4 (Will be 27 when all letters are added) and not 48 in the coordinate arrays.
+			The plus 3 is used to offset the index because there are 3 letters before the "1" (Will be 26 once all letters are added)*/
+			charLookup = textToPrint[characterIndex] - 49 + 3;
+		}
+		//Changes the base x position one character width for a space
+		if(textToPrint[characterIndex] == ' ') {
+			letterBaseX = letterBaseX + ((fontSize / 5) * 3);
+		}
+		else {
+			lineIndex = 0;
+			while(lineIndex < 20) {
+				//A "-3" in the coordinate arrays represents the end of a character
+				if(charYLines[charLookup][lineIndex] == -3) {
+					break;
+				}
+				//A "-2" in the coordinate arrays represents lifting the pen
+				if(charYLines[charLookup][lineIndex] == -2) {
+					penUp();
+				}
+				else {
+					//Sets the target x and y positions based on the current position (letterBaseX), the coordinates in the arrays and the font size
+					/*Relative X and Y coordinates for the strokes of each character are stored as a normalised value with a range of 0 to 100.
+					100 is the height of a capital letter*/
+					lineTargetX = letterBaseX + ((charXLines[charLookup][lineIndex] * fontSize)/100);
+					lineTargetY = letterBaseY + ((charYLines[charLookup][lineIndex] * fontSize)/100);
+					moveTo(lineTargetX, lineTargetY);
+					if(lineTargetX > maxX) {
+						maxX = lineTargetX;
+					}
+					/*If the pen is raised it means we've completed one stroke and have moved to the begining of the next therefore the
+					pen needs to be lowered to start drawing. e.g. moving between letter*/
+					if(penState == PENUP) {
+						penDown();
+					}
+				}
+				//Indexes through the coordinates of each letter line by line
+				lineIndex ++;
+			}
+			//Raises the pen at the end of a character and sets the base x position for the next letter
+			penUp();
+			letterBaseX = maxX + fontSize / 10;
+		}
+	}
+	//Moves to the top right of the drawing area after printing all the letters in the
 	moveTopRight();
 }
