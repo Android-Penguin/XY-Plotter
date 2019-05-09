@@ -56,6 +56,15 @@ void selectText() {
 			cursorPos ++;
 			//Replaces the blank space with a cursor
 			cursorLine[cursorPos] = '*';
+
+			if(textToPrint[cursorPos] == ' ') {
+				//Sets current character to 1 before an A so that A is the first character selected from a blank space
+				currentCharacter = 64;
+			}
+			else {
+				//If current character is not a blank space sets the current character to the character that is currently selected
+				currentCharacter = textToPrint[cursorPos];
+			}
 			resetTimer(T1);
 		}
 		while(getJoystickValue(ChC) > 40) {
@@ -71,6 +80,15 @@ void selectText() {
 			cursorPos --;
 			//Replaces the blank space with a cursor
 			cursorLine[cursorPos] = '*';
+
+			if(textToPrint[cursorPos] == ' ') {
+				//Sets current character to 1 before an A so that A is the first character selected from a blank space
+				currentCharacter = 64;
+			}
+			else {
+				//If current character is not a blank space sets the current character to the character that is currently selected
+				currentCharacter = textToPrint[cursorPos];
+			}
 			resetTimer(T1);
 		}
 		while(getJoystickValue(ChC) < -40) {
