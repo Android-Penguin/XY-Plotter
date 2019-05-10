@@ -49,7 +49,7 @@ void selectText() {
 		/*********************************************************
 		Moves the cursor left and right along the screen
 		*/
-		if(getJoystickValue(ChC) > 40 && cursorPos < 10) {
+		if(getJoystickValue(ChC) > 40 && cursorPos < 15) {
 			//Replaces the cursor with a blank space
 			cursorLine[cursorPos] = ' ';
 			//Moves the cursor along one space
@@ -100,12 +100,21 @@ void selectText() {
 		/*********************************************************
 		Changes the character at the current cursor position
 		*/
-		if(getJoystickValue(BtnRUp) == 1 && currentCharacter < 67) {
+		if(getJoystickValue(BtnRUp) == 1 && currentCharacter < 90) {
 			//Changes the letter forward one character
 			currentCharacter ++;
-			//Changes the array to the new character
+			//Changes the character in the array to the new character
 			textToPrint[cursorPos] = currentCharacter;
 			resetTimer(T2);
+		}
+		else {
+			if(getJoystickValue(BtnRUp) == 1 && currentCharacter == 90) {
+				//Sets the character to "A" if letter is "Z"
+				currentCharacter = 65;
+				//Changes the character in the array to the new character
+				textToPrint[cursorPos] = currentCharacter;
+				resetTimer(T2);
+			}
 		}
 		while(getJoystickValue(BtnRUp) == 1) {
 			//Timer is used as a debounce timer to ensure the letter is only changes by one
@@ -119,6 +128,14 @@ void selectText() {
 			//Changes the array to the new character
 			textToPrint[cursorPos] = currentCharacter;
 			resetTimer(T2);
+		}
+		else {
+			if(getJoystickValue(BtnLUp) == 1 && currentCharacter == 65) {
+				currentCharacter = 90;
+				//Changes the character in the array to the new character
+				textToPrint[cursorPos] = currentCharacter;
+				resetTimer(T2);
+			}
 		}
 		while(getJoystickValue(BtnLUp) == 1) {
 			//Timer is used as a debounce timer to ensure the letter is only changes by one
@@ -250,7 +267,7 @@ task main() {
 	float lineTargetX;
 	float lineTargetY;
 	float maxX = 0;
-	float fontSize = 30;
+	float fontSize = 40;
 	int charLookup;
 	int characterIndex;
 	int lineIndex;
