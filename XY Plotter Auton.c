@@ -15,56 +15,105 @@ bool penState = PENUP;
 const int targetMotorSpeed = 25;//Highest speed a motor will move at when drawing a line
 const float xDegreesPerMM = 9;//Multiplyer to convert millimeters to degrees for the carriage axis
 const float yDegreesPerMM = 9;//Multiplyer to convert millimeters to degrees for the rack axis
-char textToPrint [21] = "                    ";
+char line1Text [21] = "                    ";
+char line2Text [21] = "                    ";
+char line3Text [21] = "                    ";
 char cursorLine [21] = "                    ";
+char textWidth [21];
 
-/************************************************
+/*********************************************************
+Deletes blank spaces after the user finishes editing text
+*/
+void rightTrim (char * stringToTrim) {
+	int removeBlank;
+	//Scans through the string and removes all blank spaces after the last character
+	for (removeBlank = strlen(stringToTrim); removeBlank > 0; removeBlank--) {
+		if(stringToTrim[removeBlank] == ' ') {
+			stringToTrim[removeBlank] = 0;
+		}
+		else {
+			break;
+		}
+	}
+}
+
+/*********************************************************
 User text entry to select text to be written
 */
 void selectText() {
 	bool inputComplete = false;
 	int cursorPos = 0;
-	int currentCharacter = 65;
-	int removeBlank;
-	textToPrint[cursorPos] = currentCharacter;
+	int currentEditLine = 1;
+	int currentCharacter = ' ';
+	int charIndex;
+	int currentWidth;
+	int maxWidth = 76;
+	int remainingWidth;
+	char * textToEdit;
+	textToEdit = &line1Text;
 	cursorLine[cursorPos] = '*';
 
 	while(inputComplete == false) {
-		displayTextLine(0, textToPrint);
-		displayTextLine(1, cursorLine);
-
-		//Button pressed when user finishes editing
-		if(getJoystickValue(BtnFUp) == 1) {
-			//Scans through the array of text to print and removes all blank spaces after the last character
-			for (removeBlank = 19; removeBlank > 0; removeBlank--) {
-				if(textToPrint[removeBlank] == ' ') {
-					textToPrint[removeBlank] = 0;
-				}
-				else {
-					break;
-				}
-			}
-			inputComplete = true;
+		/*********************************************************
+		Changes the letter at the current cursor position
+		*/
+		if(getJoystickValue(BtnRUp) == 1 && currentCharacter < 'Z' && currentCharacter >= 'A') {
+			//Changes the letter forward one character
+			currentCharacter ++;
+			//Changes the character in the array to the new character
+			textToEdit[cursorPos] = currentCharacter;
+			resetTimer(T2);
 		}
+		else {
+			if(getJoystickValue(BtnRUp) == 1 && (currentCharacter == 'Z' || currentCharacter == ' ')) {
+				//Sets the character to "A" if character is "Z" or a blank space
+				currentCharacter = 'A';
+				//Changes the character in the array to the new character
+				textToEdit[cursorPos] = currentCharacter;
+				resetTimer(T2);
+			}
+		}
+		while(getJoystickValue(BtnRUp) == 1) {
+			//Timer is used as a debounce timer to ensure the letter only changes by one
+			if(getTimerValue(T2) > 300) {
+				break;
+			}
+		}
+		if(getJoystickValue(BtnLUp) == 1 && currentCharacter > 'A') {
+			//Changes the letter back one character
+			currentCharacter --;
+			//Changes the array to the new character
+			textToEdit[cursorPos] = currentCharacter;
+			resetTimer(T2);
+		}
+		else {
+			if(getJoystickValue(BtnLUp) == 1 && (currentCharacter == 'A' || currentCharacter == ' ')) {
+				//Sets the character to "Z" if the character is "A" or a blank space
+				currentCharacter = 'Z';
+				//Changes the character in the array to the new character
+				textToEdit[cursorPos] = currentCharacter;
+				resetTimer(T2);
+			}
+		}
+		while(getJoystickValue(BtnLUp) == 1) {
+			//Timer is used as a debounce timer to ensure the letter only changes by one
+			if(getTimerValue(T2) > 300) {
+				break;
+			}
+		}
+
 		/*********************************************************
 		Moves the cursor left and right along the screen
 		*/
-		if(getJoystickValue(ChC) > 40 && cursorPos < 15) {
+		if(getJoystickValue(ChC) > 40 && cursorPos < 18) {
 			//Replaces the cursor with a blank space
 			cursorLine[cursorPos] = ' ';
 			//Moves the cursor along one space
 			cursorPos ++;
 			//Replaces the blank space with a cursor
 			cursorLine[cursorPos] = '*';
-
-			if(textToPrint[cursorPos] == ' ') {
-				//Sets current character to 1 before an A so that A is the first character selected from a blank space
-				currentCharacter = 64;
-			}
-			else {
-				//If current character is not a blank space sets the current character to the character that is currently selected
-				currentCharacter = textToPrint[cursorPos];
-			}
+			//Sets the current character to the character that is currently selected
+			currentCharacter = textToEdit[cursorPos];
 			resetTimer(T1);
 		}
 		while(getJoystickValue(ChC) > 40) {
@@ -80,15 +129,8 @@ void selectText() {
 			cursorPos --;
 			//Replaces the blank space with a cursor
 			cursorLine[cursorPos] = '*';
-
-			if(textToPrint[cursorPos] == ' ') {
-				//Sets current character to 1 before an A so that A is the first character selected from a blank space
-				currentCharacter = 64;
-			}
-			else {
-				//If current character is not a blank space sets the current character to the character that is currently selected
-				currentCharacter = textToPrint[cursorPos];
-			}
+			//Sets the current character to the character that is currently selected
+			currentCharacter = textToEdit[cursorPos];
 			resetTimer(T1);
 		}
 		while(getJoystickValue(ChC) < -40) {
@@ -97,56 +139,103 @@ void selectText() {
 				break;
 			}
 		}
+
 		/*********************************************************
-		Changes the character at the current cursor position
+		Moves cursor up and down a line
 		*/
-		if(getJoystickValue(BtnRUp) == 1 && currentCharacter < 90) {
-			//Changes the letter forward one character
-			currentCharacter ++;
-			//Changes the character in the array to the new character
-			textToPrint[cursorPos] = currentCharacter;
-			resetTimer(T2);
+		if(getJoystickValue(BtnEDown) ==1 && currentEditLine < 3) {
+			currentEditLine++;
+			resetTimer(T3);
 		}
-		else {
-			if(getJoystickValue(BtnRUp) == 1 && currentCharacter == 90) {
-				//Sets the character to "A" if letter is "Z"
-				currentCharacter = 65;
-				//Changes the character in the array to the new character
-				textToPrint[cursorPos] = currentCharacter;
-				resetTimer(T2);
-			}
-		}
-		while(getJoystickValue(BtnRUp) == 1) {
-			//Timer is used as a debounce timer to ensure the letter is only changes by one
-			if(getTimerValue(T2) > 300) {
+		while(getJoystickValue(BtnEDown) ==1) {
+			//Timer is used as a debounce timer to ensure cursor only moves one line
+			if(getTimerValue(T3) > 300) {
 				break;
 			}
 		}
-		if(getJoystickValue(BtnLUp) == 1 && currentCharacter > 65) {
-			//Changes the letter back one character
-			currentCharacter --;
-			//Changes the array to the new character
-			textToPrint[cursorPos] = currentCharacter;
-			resetTimer(T2);
+		if(getJoystickValue(BtnEUp) ==1 && currentEditLine > 1) {
+			currentEditLine--;
+			resetTimer(T3);
 		}
-		else {
-			if(getJoystickValue(BtnLUp) == 1 && currentCharacter == 65) {
-				currentCharacter = 90;
-				//Changes the character in the array to the new character
-				textToPrint[cursorPos] = currentCharacter;
-				resetTimer(T2);
-			}
-		}
-		while(getJoystickValue(BtnLUp) == 1) {
-			//Timer is used as a debounce timer to ensure the letter is only changes by one
-			if(getTimerValue(T2) > 300) {
+		while(getJoystickValue(BtnEUp) ==1) {
+			//Timer is used as a debounce timer to ensure cursor only moves one line
+			if(getTimerValue(T3) > 300) {
 				break;
 			}
+		}
+
+		switch(currentEditLine) {
+		case 1:
+			textToEdit = &line1Text;
+			displayTextLine(0, line1Text);
+			displayTextLine(1, cursorLine);
+			displayTextLine(2, line2Text);
+			displayTextLine(3, line3Text);
+			break;
+
+		case 2:
+			textToEdit = &line2Text;
+			displayTextLine(0, line1Text);
+			displayTextLine(1, line2Text);
+			displayTextLine(2, cursorLine);
+			displayTextLine(3, line3Text);
+			break;
+
+		case 3:
+			textToEdit = &line3Text;
+			displayTextLine(0, line1Text);
+			displayTextLine(1, line2Text);
+			displayTextLine(2, line3Text);
+			displayTextLine(3, cursorLine);
+			break;
+		}
+
+		/*********************************************************
+		Keeps track of the character widths
+		*/
+		if(textToEdit[cursorPos] == 'M' || textToEdit[cursorPos] == 'W') {
+			textWidth[cursorPos] = 8;
+		}
+		else {
+			if(textToEdit[cursorPos] == 'G') {
+				textWidth[cursorPos] = 7;
+			}
+			else {
+				if(textToEdit[cursorPos] == 'A' || textToEdit[cursorPos] == 'O' || textToEdit[cursorPos] == 'Q') {
+					textWidth[cursorPos] = 6;
+				}
+				else {
+					if(textToEdit[cursorPos] == 'C' || textToEdit[cursorPos] == 'S' || textToEdit[cursorPos] == 'U' || textToEdit[cursorPos] == 'V') {
+						textWidth[cursorPos] = 5;
+					}
+					else {
+						textWidth[cursorPos] = 4;
+					}
+				}
+			}
+		}
+		currentWidth = 0;
+		for (charIndex = 0; charIndex<18; charIndex++) {
+			currentWidth = currentWidth + textWidth[charIndex];
+			remainingWidth = maxWidth-currentWidth;
+			if(remainingWidth < 0) {
+				textToEdit[charIndex] = ' ';
+			}
+		}
+
+		/*********************************************************
+		Removes blank spaces from end of each line
+		*/
+		if(getJoystickValue(BtnFUp) == 1) {
+			rightTrim(line1Text);
+			rightTrim(line2Text);
+			rightTrim(line3Text);
+			inputComplete = true;
 		}
 	}
 }
 
-/************************************************
+/*********************************************************
 Moves the pen to an XY Coorinate on the whiteboard
 */
 void moveTo(float xCoordMM, float yCoordMM) {
@@ -190,7 +279,8 @@ void moveTo(float xCoordMM, float yCoordMM) {
 	waitUntilMotorMoveComplete(carriageAxis);
 	waitUntilMotorMoveComplete(rackAxis);
 }
-/*********
+
+/*********************************************************
 Raises pen
 */
 void penUp() {
@@ -199,7 +289,7 @@ void penUp() {
 	sleep(600);
 }
 
-/*********
+/*********************************************************
 Lowers pen
 */
 void penDown() {
@@ -207,6 +297,7 @@ void penDown() {
 	penState = PENDOWN;
 	waitUntilMotorMoveComplete(liftArm);
 }
+
 /***************************************************************************************************
 Returns the robot to point (0,0) on the whitboard (Bottom left corner) and resets the motor encoders
 This is done so that the robot is at a known location to start drawing from
@@ -261,24 +352,21 @@ void moveTopRight () {
 	sleep(1000);
 }
 
-task main() {
+/*********************************************************
+Prints one line of text from a string
+*/
+void printText (char * textToPrint) {
+	resetMotorEncoder(carriageAxis);
+	resetMotorEncoder(rackAxis);
 	float  letterBaseX = getMotorEncoder(carriageAxis);
 	float  letterBaseY = getMotorEncoder(rackAxis);
 	float lineTargetX;
 	float lineTargetY;
 	float maxX = 0;
-	float fontSize = 40;
+	float fontSize = 45;
 	int charLookup;
 	int characterIndex;
 	int lineIndex;
-
-	penUp();
-	goHome();
-	resetMotorEncoder(carriageAxis);
-	resetMotorEncoder(rackAxis);
-	letterBaseX = getMotorEncoder(carriageAxis);
-	letterBaseY = getMotorEncoder(rackAxis);
-	selectText();
 
 	//Scans through the "text to print" array character by character and prints it
 	for (characterIndex = 0; characterIndex<strlen(textToPrint); characterIndex++) {
@@ -334,6 +422,25 @@ task main() {
 			letterBaseX = maxX + fontSize / 10;
 		}
 	}
-	//Moves to the top right of the drawing area after printing all the letters in the
+}
+
+task main() {
+	penUp();
+	goHome();
+	resetMotorEncoder(carriageAxis);
+	resetMotorEncoder(rackAxis);
+	selectText();
+	moveTo(0, 104);
+	printText(line1Text);
+	goHome();
+	resetMotorEncoder(carriageAxis);
+	resetMotorEncoder(rackAxis);
+	moveTo(0, 52);
+	printText(line2Text);
+	goHome();
+	resetMotorEncoder(carriageAxis);
+	resetMotorEncoder(rackAxis);
+	printText(line3Text);
+	//Moves to the top right of the drawing area after printing all 3 lines
 	moveTopRight();
 }
