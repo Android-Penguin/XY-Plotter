@@ -53,6 +53,16 @@ void selectText() {
 	textToEdit = &line1Text;
 	cursorLine[cursorPos] = '*';
 
+	//Splash screen to be displayed before user starts editing text
+	while(getJoystickValue(BtnFUp) != 1) {
+		displayTextLine(0, "Welcome to Shaun's");
+		displayTextLine(1, "XY Plotter, press");
+		displayTextLine(2, "button F-UP to");
+		displayTextLine(3, "continue");
+	}
+	while(getJoystickValue(BtnFUp) == 1) {
+	}
+
 	while(inputComplete == false) {
 		/*********************************************************
 		Changes the letter at the current cursor position
@@ -101,6 +111,9 @@ void selectText() {
 				break;
 			}
 		}
+		if(getJoystickValue(BtnFDown) == 1) {
+			textToEdit[cursorPos] = ' '
+		}
 
 		/*********************************************************
 		Moves the cursor left and right along the screen
@@ -141,7 +154,7 @@ void selectText() {
 		}
 
 		/*********************************************************
-		Moves cursor up and down a line
+		Moves cursor up and down a line and controls display
 		*/
 		if(getJoystickValue(BtnEDown) ==1 && currentEditLine < 3) {
 			currentEditLine++;
