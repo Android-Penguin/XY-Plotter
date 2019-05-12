@@ -112,7 +112,7 @@ void selectText() {
 			}
 		}
 		if(getJoystickValue(BtnFDown) == 1) {
-			textToEdit[cursorPos] = ' '
+			textToEdit[cursorPos] = ' ';
 		}
 
 		/*********************************************************
@@ -388,13 +388,6 @@ void printText (char * textToPrint) {
 			/*Locates the letter in the x and y coordinate arrays. The minus 65 is used to offset the index because
 			"A" is listed as 0 and not 65 in the coordinate arrays*/
 			charLookup = textToPrint[characterIndex] - 65;
-		}
-		//Numbers have an ASCII value between 48 and 57
-		if(textToPrint[characterIndex] >= 48 && textToPrint[characterIndex] <= 57) {
-			/*Locates the letter in the x and y coordinate arrays. The minus 49 is used to offset the index because
-			"1" is listed as 4 (Will be 27 when all letters are added) and not 48 in the coordinate arrays.
-			The plus 3 is used to offset the index because there are 3 letters before the "1" (Will be 26 once all letters are added)*/
-			charLookup = textToPrint[characterIndex] - 49 + 3;
 		}
 		//Changes the base x position one character width for a space
 		if(textToPrint[characterIndex] == ' ') {
