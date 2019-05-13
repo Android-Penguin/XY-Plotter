@@ -217,8 +217,8 @@ void selectText() {
 			break;
 		}
 
-		/*********************************************************
-		Keeps track of the character widths
+		/***************************************************************************************
+		Keeps track of the character widths and limits characters that go out of printable area
 		*/
 		if(textToEdit[cursorPos] == 'M' || textToEdit[cursorPos] == 'W') {
 			textWidth[cursorPos] = 8;
@@ -242,6 +242,7 @@ void selectText() {
 			}
 		}
 		currentWidth = 0;
+		//Adds up the total widths of all the letters and deletes any characters that go out of printable area
 		for (charIndex = 0; charIndex<18; charIndex++) {
 			currentWidth = currentWidth + textWidth[charIndex];
 			remainingWidth = maxWidth-currentWidth;
@@ -250,8 +251,8 @@ void selectText() {
 			}
 		}
 
-		/*********************************************************
-		Removes blank spaces from end of each line
+		/*************************************************************
+		Removes blank spaces that follow the last non-blank character
 		*/
 		if(getJoystickValue(BtnFUp) == 1) {
 			rightTrim(line1Text);
@@ -354,27 +355,27 @@ void goHome() {
 }
 
 /************************************************************************************
-Moves the robot to the top right corner of the whiteboard.
+Moves the robot to the bottom right corner of the whiteboard.
 This is done after finishing a drawing so that the text/lines are more easily visible
 */
-void moveTopRight () {
-	bool topBumperPressed = false;
+void moveBottomRight () {
+	bool bottomBumperPressed = false;
 	bool rightBumperPressed = false;
 
-	setMotorSpeed(rackAxis, 100);
+	setMotorSpeed(rackAxis, -100);
 	setMotorSpeed(carriageAxis, 100);
-	//Move to the top right of drawing area until the right and top bumper switches are pressed
-	while(topBumperPressed == false || rightBumperPressed == false) {
-		if(getBumperValue(topBumper) == 1) {
+	//Move to the bottom right of drawing area until the right and bottom bumper switches are pressed
+	while(bottomBumperPressed == false || rightBumperPressed == false) {
+		if(getBumperValue(bottomBumper) == 1) {
 			setMotorSpeed(rackAxis, 0);
-			topBumperPressed = true;
+			bottomBumperPressed = true;
 		}
 		if(getBumperValue(rightBumper) == 1) {
 			setMotorSpeed(carriageAxis, 0);
 			rightBumperPressed = true;
 		}
 	}
-	topBumperPressed = false;
+	bottomBumperPressed = false;
 	rightBumperPressed = false;
 	sleep(1000);
 }
@@ -462,5 +463,5 @@ task main() {
 	resetMotorEncoder(rackAxis);
 	printText(line3Text);
 	//Moves to the top right of the drawing area after printing all 3 lines
-	moveTopRight();
+	moveBottomRight();
 }
