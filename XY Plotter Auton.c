@@ -157,7 +157,14 @@ void selectText() {
 		Moves cursor up and down a line and controls display
 		*/
 		if(getJoystickValue(BtnEDown) ==1 && currentEditLine < 3) {
+			//Changes the line up by one line
 			currentEditLine++;
+			//Replaces the cursor with a blank space
+			cursorLine[cursorPos] = ' ';
+			//Moves the cursor positoin to the left side of the display
+			cursorPos = 0;
+			//Replaces the blank space with a cursor
+			cursorLine[cursorPos] = '*';
 			resetTimer(T3);
 		}
 		while(getJoystickValue(BtnEDown) ==1) {
@@ -167,7 +174,14 @@ void selectText() {
 			}
 		}
 		if(getJoystickValue(BtnEUp) ==1 && currentEditLine > 1) {
+			//Changes the line down by one line
 			currentEditLine--;
+			//Replaces the cursor with a blank space
+			cursorLine[cursorPos] = ' ';
+			//Moves the cursor positoin to the left side of the display
+			cursorPos = 0;
+			//Replaces the blank space with a cursor
+			cursorLine[cursorPos] = '*';
 			resetTimer(T3);
 		}
 		while(getJoystickValue(BtnEUp) ==1) {
