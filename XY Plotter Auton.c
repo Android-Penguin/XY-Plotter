@@ -165,6 +165,8 @@ void selectText() {
 			cursorPos = 0;
 			//Replaces the blank space with a cursor
 			cursorLine[cursorPos] = '*';
+			//Sets the current character to the character that is currently selected
+			currentCharacter = textToEdit[cursorPos];
 			resetTimer(T3);
 		}
 		while(getJoystickValue(BtnEDown) ==1) {
@@ -182,6 +184,8 @@ void selectText() {
 			cursorPos = 0;
 			//Replaces the blank space with a cursor
 			cursorLine[cursorPos] = '*';
+			//Sets the current character to the character that is currently selected
+			currentCharacter = textToEdit[cursorPos];
 			resetTimer(T3);
 		}
 		while(getJoystickValue(BtnEUp) ==1) {
@@ -464,4 +468,44 @@ task main() {
 	printText(line3Text);
 	//Moves to the top right of the drawing area after printing all 3 lines
 	moveBottomRight();
+
+	//Loop that allows users to repeat printing of the previous text
+	while(true) {
+		displayTextLine(0, "Press button F-UP");
+		displayTextLine(1, "to repeat print");
+		displayTextLine(2, "Press button F-Down");
+		displayTextLine(3, "to exit program");
+
+		if(getJoystickValue(BtnFUp) == 1) {
+			displayTextLine(0, line1Text);
+			displayTextLine(1, line2Text);
+			displayTextLine(2, line3Text);
+			displayTextLine(3, "");
+
+			goHome();
+			resetMotorEncoder(carriageAxis);
+			resetMotorEncoder(rackAxis);
+			moveTo(0, 104);
+			printText(line1Text);
+			goHome();
+			resetMotorEncoder(carriageAxis);
+			resetMotorEncoder(rackAxis);
+			moveTo(0, 52);
+			printText(line2Text);
+			goHome();
+			resetMotorEncoder(carriageAxis);
+			resetMotorEncoder(rackAxis);
+			printText(line3Text);
+			//Moves to the top right of the drawing area after printing all 3 lines
+			moveBottomRight();
+		}
+
+		if(getJoystickValue(BtnFDown) == 1) {
+			displayTextLine(0, "");
+			displayTextLine(1, "");
+			displayTextLine(2, "");
+			displayTextLine(3, "");
+			break;
+		}
+	}
 }
